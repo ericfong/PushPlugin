@@ -9,11 +9,17 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gcm.GCMBaseIntentService;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 @SuppressLint("NewApi")
 public class GCMIntentService extends GCMBaseIntentService {
@@ -114,6 +120,35 @@ public class GCMIntentService extends GCMBaseIntentService {
 		} else {
 			mBuilder.setContentText("<missing message content>");
 		}
+
+
+		// set icon
+		String iconSrc = extras.getString("icon");
+		if (iconSrc != null && !iconSrc.isEmpty()) {
+			try {
+				// download and convert to Bitmap
+				URL url = new URL(iconSrc);
+				Bitmap icon = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+				mBuilder.setLargeIcon(icon);
+			} catch (Exception e) {
+				// catch all exceptions, so that notification will not be broken for error icon
+			}
+		}
+
+		// set expanded view title and content
+		String[] lines = message.split("\n");
+		if (lines.length > 1) {
+			NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+			// Sets a title for the Inbox in expanded layout
+			inboxStyle.setBigContentTitle(extras.getString("title"));
+			// Moves events into the expanded layout
+			for (int i=0; i < lines.length; i++) {
+				inboxStyle.addLine(lines[i]);
+			}
+			// Moves the expanded layout object into the notification object.
+			mBuilder.setStyle(inboxStyle);
+		}
+
 
 		String msgcnt = extras.getString("msgcnt");
 		if (msgcnt != null) {
